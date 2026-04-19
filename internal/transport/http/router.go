@@ -5,8 +5,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
-	httphandlers "example.com/taskservice/internal/transport/http/handlers"
+	swaggerdocs "github.com/KirTrub/medods-test-task/internal/transport/http/docs"
+	httphandlers "github.com/KirTrub/medods-test-task/internal/transport/http/handlers"
 )
 
 func NewRouter(

@@ -9,8 +9,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
-	scheduleusecase "example.com/taskservice/internal/usecase/schedule"
+	taskdomain "github.com/KirTrub/medods-test-task/internal/domain/task"
+	scheduleusecase "github.com/KirTrub/medods-test-task/internal/usecase/schedule"
 )
 
 type ScheduleHandler struct {

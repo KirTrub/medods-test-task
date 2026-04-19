@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	taskdomain "github.com/KirTrub/medods-test-task/internal/domain/task"
 )
 
 type Service struct {

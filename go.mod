@@ -1,4 +1,4 @@
-module example.com/taskservice
+module github.com/KirTrub/medods-test-task
 
 go 1.23.0
 

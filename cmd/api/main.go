@@ -11,14 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	infrastructurepostgres "example.com/taskservice/internal/infrastructure/postgres"
-	postgresrepo "example.com/taskservice/internal/repository/postgres"
-	"example.com/taskservice/internal/scheduler"
-	transporthttp "example.com/taskservice/internal/transport/http"
-	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
-	httphandlers "example.com/taskservice/internal/transport/http/handlers"
-	scheduleusecase "example.com/taskservice/internal/usecase/schedule"
-	taskusecase "example.com/taskservice/internal/usecase/task"
+	infrastructurepostgres "github.com/KirTrub/medods-test-task/internal/infrastructure/postgres"
+	postgresrepo "github.com/KirTrub/medods-test-task/internal/repository/postgres"
+	"github.com/KirTrub/medods-test-task/internal/scheduler"
+	transporthttp "github.com/KirTrub/medods-test-task/internal/transport/http"
+	swaggerdocs "github.com/KirTrub/medods-test-task/internal/transport/http/docs"
+	httphandlers "github.com/KirTrub/medods-test-task/internal/transport/http/handlers"
+	scheduleusecase "github.com/KirTrub/medods-test-task/internal/usecase/schedule"
+	taskusecase "github.com/KirTrub/medods-test-task/internal/usecase/task"
 )
 
 func main() {

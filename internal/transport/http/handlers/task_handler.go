@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
-	taskusecase "example.com/taskservice/internal/usecase/task"
+	taskdomain "github.com/KirTrub/medods-test-task/internal/domain/task"
+	taskusecase "github.com/KirTrub/medods-test-task/internal/usecase/task"
 )
 
 type TaskHandler struct {
