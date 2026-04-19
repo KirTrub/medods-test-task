@@ -7,15 +7,18 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	infrastructurepostgres "example.com/taskservice/internal/infrastructure/postgres"
 	postgresrepo "example.com/taskservice/internal/repository/postgres"
+	"example.com/taskservice/internal/scheduler"
 	transporthttp "example.com/taskservice/internal/transport/http"
 	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
 	httphandlers "example.com/taskservice/internal/transport/http/handlers"
-	"example.com/taskservice/internal/usecase/task"
+	scheduleusecase "example.com/taskservice/internal/usecase/schedule"
+	taskusecase "example.com/taskservice/internal/usecase/task"
 )
 
 func main() {
@@ -36,10 +39,25 @@ func main() {
 	defer pool.Close()
 
 	taskRepo := postgresrepo.New(pool)
-	taskUsecase := task.NewService(taskRepo)
-	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
+	scheduleRepo := postgresrepo.NewScheduleRepository(pool)
+
+	taskSvc := taskusecase.NewService(taskRepo)
+	scheduleSvc := scheduleusecase.NewService(scheduleRepo)
+
+	taskHandler := httphandlers.NewTaskHandler(taskSvc)
+	scheduleHandler := httphandlers.NewScheduleHandler(scheduleSvc)
 	docsHandler := swaggerdocs.NewHandler()
-	router := transporthttp.NewRouter(taskHandler, docsHandler)
+
+	router := transporthttp.NewRouter(taskHandler, scheduleHandler, docsHandler)
+
+	sched := scheduler.New(scheduleRepo, taskRepo, logger)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		sched.Run(ctx)
+	}()
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -64,6 +82,8 @@ func main() {
 		logger.Error("listen and serve", "error", err)
 		os.Exit(1)
 	}
+
+	wg.Wait()
 }
 
 type config struct {
@@ -88,6 +108,5 @@ func envOrDefault(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-
 	return fallback
 }

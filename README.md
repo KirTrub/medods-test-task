@@ -1,55 +1,38 @@
 # Task Service
 
-Сервис для управления задачами с HTTP API на Go.
+Сервис для управления задачами с HTTP API на Go. Включает в себя систему автоматического планирования и генерации периодических задач.
 
 ## Требования
 
-- Go `1.23+`
+- Go 1.23+
 - Docker и Docker Compose
 
-## Быстрый запуск через Docker Compose
+## Быстрый запуск
 
 ```bash
 docker compose up --build
 ```
 
-После запуска сервис будет доступен по адресу `http://localhost:8080`.
+После запуска сервис будет доступен по адресу `http://localhost:8080`. В фоне автоматически запустится воркер, который генерирует задачи по заданному расписанию (обновление происходит каждую полночь по UTC).
 
-Если `postgres` уже запускался ранее со старой схемой, пересоздай volume:
+**Важно:** Если база данных уже запускалась ранее со старой схемой, необходимо пересоздать volume для применения новых миграций:
 
 ```bash
 docker compose down -v
 docker compose up --build
 ```
 
-Причина в том, что SQL-файл из `migrations/0001_create_tasks.up.sql` монтируется в `docker-entrypoint-initdb.d` и применяется только при инициализации пустого data volume.
+## Функционал расписаний (Task Schedules)
 
-## Swagger
+Реализована поддержка автоматического создания инстансов задач по расписанию. Поддерживаемые типы:
+- **every_n_days**: Каждые N дней.
+- **day_of_month**: В определенный день месяца.
+- **dates**: По конкретному списку дат (JSON).
+- **parity**: По четным или нечетным дням.
 
-Swagger UI:
+Генерация происходит автоматически фоновым процессом при наступлении новых суток.
 
-```text
-http://localhost:8080/swagger/
-```
+## API Документация (Swagger)
 
-OpenAPI JSON:
-
-```text
-http://localhost:8080/swagger/openapi.json
-```
-
-## API
-
-Базовый префикс API:
-
-```text
-/api/v1
-```
-
-Основные маршруты:
-
-- `POST /api/v1/tasks`
-- `GET /api/v1/tasks`
-- `GET /api/v1/tasks/{id}`
-- `PUT /api/v1/tasks/{id}`
-- `DELETE /api/v1/tasks/{id}`
+- Swagger UI: `http://localhost:8080/swagger/`
+- OpenAPI JSON: `http://localhost:8080/swagger/doc.json`
