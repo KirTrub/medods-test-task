@@ -24,21 +24,23 @@ type Usecase interface {
 }
 
 type CreateInput struct {
-	Title       string
-	Description string
-	Type        taskdomain.ScheduleType
-	EveryNDays  int
-	DayOfMonth  int
-	Dates       []time.Time
-	Parity      taskdomain.Parity
+	Title        string
+	Description  string
+	Type         taskdomain.ScheduleType
+	EveryNDays   int
+	DayOfMonth   int
+	Dates        []time.Time
+	DeadlineDays int
+	Parity       taskdomain.Parity
 }
 
 type UpdateInput struct {
-	Title       string
-	Description string
-	Type        taskdomain.ScheduleType
-	EveryNDays  int
-	DayOfMonth  int
-	Dates       []time.Time
-	Parity      taskdomain.Parity
+	Title        string
+	Description  string
+	Type         taskdomain.ScheduleType
+	EveryNDays   int
+	DayOfMonth   int
+	Dates        []time.Time
+	DeadlineDays int
+	Parity       taskdomain.Parity
 }

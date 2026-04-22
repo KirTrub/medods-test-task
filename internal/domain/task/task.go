@@ -8,6 +8,7 @@ const (
 	StatusNew        Status = "new"
 	StatusInProgress Status = "in_progress"
 	StatusDone       Status = "done"
+	StatusOverdue    Status = "overdue"
 )
 
 type Task struct {
@@ -16,8 +17,9 @@ type Task struct {
 	Description string `json:"description"`
 	Status      Status `json:"status"`
 	ScheduleID  *int64
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	DeadlineAt  *time.Time `json:"deadline_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 func (s Status) Valid() bool {

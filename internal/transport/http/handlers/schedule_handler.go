@@ -138,10 +138,11 @@ func mutationDTOToCreateInput(req scheduleMutationDTO) (scheduleusecase.CreateIn
 	}
 
 	input := scheduleusecase.CreateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        taskdomain.ScheduleType(req.Type),
-		Dates:       dates,
+		Title:        req.Title,
+		Description:  req.Description,
+		Type:         taskdomain.ScheduleType(req.Type),
+		Dates:        dates,
+		DeadlineDays: req.DeadlineDays,
 	}
 
 	if req.EveryNDays != nil {
@@ -164,10 +165,11 @@ func mutationDTOToUpdateInput(req scheduleMutationDTO) (scheduleusecase.UpdateIn
 	}
 
 	input := scheduleusecase.UpdateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        taskdomain.ScheduleType(req.Type),
-		Dates:       dates,
+		Title:        req.Title,
+		Description:  req.Description,
+		Type:         taskdomain.ScheduleType(req.Type),
+		Dates:        dates,
+		DeadlineDays: req.DeadlineDays,
 	}
 
 	if req.EveryNDays != nil {

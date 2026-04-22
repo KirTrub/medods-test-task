@@ -44,6 +44,8 @@ type Schedule struct {
 
 	Parity Parity
 
+	DeadlineDays int
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

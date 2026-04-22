@@ -18,6 +18,7 @@ type taskDTO struct {
 	Description string            `json:"description"`
 	Status      taskdomain.Status `json:"status"`
 	ScheduleID  *int64            `json:"schedule_id,omitempty"`
+	DeadlineAt  *time.Time        `json:"deadline_at,omitempty"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
 }
@@ -28,6 +29,7 @@ func newTaskDTO(task *taskdomain.Task) taskDTO {
 		Title:       task.Title,
 		Description: task.Description,
 		Status:      task.Status,
+		DeadlineAt:  task.DeadlineAt,
 		ScheduleID:  task.ScheduleID,
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.UpdatedAt,
@@ -35,36 +37,39 @@ func newTaskDTO(task *taskdomain.Task) taskDTO {
 }
 
 type scheduleMutationDTO struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Type        string   `json:"type"`
-	EveryNDays  *int     `json:"every_n_days,omitempty"`
-	DayOfMonth  *int     `json:"day_of_month,omitempty"`
-	Dates       []string `json:"dates,omitempty"` // format: "2006-01-02"
-	Parity      *string  `json:"parity,omitempty"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Type         string   `json:"type"`
+	EveryNDays   *int     `json:"every_n_days,omitempty"`
+	DayOfMonth   *int     `json:"day_of_month,omitempty"`
+	Dates        []string `json:"dates,omitempty"` // format: "2006-01-02"
+	Parity       *string  `json:"parity,omitempty"`
+	DeadlineDays int      `json:"deadline_days,omitempty"`
 }
 
 type scheduleDTO struct {
-	ID          int64     `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Type        string    `json:"type"`
-	EveryNDays  *int      `json:"every_n_days,omitempty"`
-	DayOfMonth  *int      `json:"day_of_month,omitempty"`
-	Dates       []string  `json:"dates,omitempty"`
-	Parity      *string   `json:"parity,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           int64     `json:"id"`
+	Title        string    `json:"title"`
+	Description  string    `json:"description"`
+	Type         string    `json:"type"`
+	EveryNDays   *int      `json:"every_n_days,omitempty"`
+	DayOfMonth   *int      `json:"day_of_month,omitempty"`
+	Dates        []string  `json:"dates,omitempty"`
+	Parity       *string   `json:"parity,omitempty"`
+	DeadlineDays int       `json:"deadline_days,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 func newScheduleDTO(s *taskdomain.Schedule) scheduleDTO {
 	dto := scheduleDTO{
-		ID:          s.ID,
-		Title:       s.Title,
-		Description: s.Description,
-		Type:        string(s.Type),
-		CreatedAt:   s.CreatedAt,
-		UpdatedAt:   s.UpdatedAt,
+		ID:           s.ID,
+		Title:        s.Title,
+		Description:  s.Description,
+		Type:         string(s.Type),
+		DeadlineDays: s.DeadlineDays,
+		CreatedAt:    s.CreatedAt,
+		UpdatedAt:    s.UpdatedAt,
 	}
 
 	if s.EveryNDays != 0 {

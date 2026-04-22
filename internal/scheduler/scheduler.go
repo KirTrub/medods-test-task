@@ -14,6 +14,7 @@ type ScheduleRepository interface {
 
 type TaskRepository interface {
 	Create(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
+	MarkOverdue(ctx context.Context, now time.Time) (int64, error)
 }
 
 type Scheduler struct {
@@ -52,43 +53,39 @@ func (s *Scheduler) Run(ctx context.Context) {
 }
 
 func (s *Scheduler) generateTasks(ctx context.Context) {
-	today := s.now().Truncate(24 * time.Hour)
-	s.logger.Info("generating scheduled tasks", "date", today.Format("2006-01-02"))
+	now := s.now()
+	today := now.Truncate(24 * time.Hour)
 
-	schedules, err := s.schedules.List(ctx)
+	countMarked, err := s.tasks.MarkOverdue(ctx, now)
 	if err != nil {
-		s.logger.Error("failed to list schedules", "error", err)
-		return
+		s.logger.Error("failed to mark overdue tasks", "error", err)
+	} else if countMarked > 0 {
+		s.logger.Info("tasks marked as overdue", "count", countMarked)
 	}
 
-	created := 0
+	schedules, _ := s.schedules.List(ctx)
 	for _, sched := range schedules {
 		if !sched.ShouldRunOn(today) {
 			continue
 		}
 
-		schedID := sched.ID
+		var deadlineAt *time.Time
+		if sched.DeadlineDays > 0 {
+			t := today.AddDate(0, 0, sched.DeadlineDays)
+			deadlineAt = &t
+		}
+
 		task := &taskdomain.Task{
 			Title:       sched.Title,
 			Description: sched.Description,
 			Status:      taskdomain.StatusNew,
-			ScheduleID:  &schedID,
-			CreatedAt:   today,
-			UpdatedAt:   today,
+			ScheduleID:  &sched.ID,
+			DeadlineAt:  deadlineAt,
+			CreatedAt:   now,
+			UpdatedAt:   now,
 		}
-
-		if _, err := s.tasks.Create(ctx, task); err != nil {
-			s.logger.Error("failed to create task from schedule",
-				"schedule_id", sched.ID,
-				"error", err,
-			)
-			continue
-		}
-
-		created++
+		s.tasks.Create(ctx, task)
 	}
-
-	s.logger.Info("scheduled tasks generated", "count", created)
 }
 
 func untilNextMidnight(now time.Time) time.Duration {

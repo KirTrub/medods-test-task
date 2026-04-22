@@ -28,16 +28,16 @@ func (r *ScheduleRepository) Create(ctx context.Context, s *taskdomain.Schedule)
 
 	const query = `
 		INSERT INTO task_schedules
-		    (title, description, type, every_n_days, day_of_month, dates, parity, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, title, description, type, every_n_days, day_of_month, dates, parity, created_at, updated_at
+		    (title, description, type, every_n_days, day_of_month, dates, parity, deadline_days, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, title, description, type, every_n_days, day_of_month, dates, parity, deadline_days, created_at, updated_at
 	`
 
 	row := r.pool.QueryRow(ctx, query,
 		s.Title, s.Description, string(s.Type),
 		zeroableInt(s.EveryNDays), zeroableInt(s.DayOfMonth),
 		datesJSON, zeroableParity(s.Parity),
-		s.CreatedAt, s.UpdatedAt,
+		s.DeadlineDays, s.CreatedAt, s.UpdatedAt,
 	)
 
 	return scanSchedule(row)
@@ -45,7 +45,7 @@ func (r *ScheduleRepository) Create(ctx context.Context, s *taskdomain.Schedule)
 
 func (r *ScheduleRepository) GetByID(ctx context.Context, id int64) (*taskdomain.Schedule, error) {
 	const query = `
-		SELECT id, title, description, type, every_n_days, day_of_month, dates, parity, created_at, updated_at
+		SELECT id, title, description, type, every_n_days, day_of_month, dates, parity, deadline_days, created_at, updated_at
 		FROM task_schedules
 		WHERE id = $1
 	`
@@ -77,16 +77,17 @@ func (r *ScheduleRepository) Update(ctx context.Context, s *taskdomain.Schedule)
 		    day_of_month = $5,
 		    dates        = $6,
 		    parity       = $7,
-		    updated_at   = $8
-		WHERE id = $9
-		RETURNING id, title, description, type, every_n_days, day_of_month, dates, parity, created_at, updated_at
+			deadline_days = $8,
+		    updated_at   = $9
+		WHERE id = $10
+		RETURNING id, title, description, type, every_n_days, day_of_month, dates, parity, deadline_days, created_at, updated_at
 	`
 
 	row := r.pool.QueryRow(ctx, query,
 		s.Title, s.Description, string(s.Type),
 		zeroableInt(s.EveryNDays), zeroableInt(s.DayOfMonth),
 		datesJSON, zeroableParity(s.Parity),
-		s.UpdatedAt, s.ID,
+		s.DeadlineDays, s.UpdatedAt, s.ID,
 	)
 
 	updated, err := scanSchedule(row)
@@ -113,7 +114,7 @@ func (r *ScheduleRepository) Delete(ctx context.Context, id int64) error {
 
 func (r *ScheduleRepository) List(ctx context.Context) ([]taskdomain.Schedule, error) {
 	const query = `
-		SELECT id, title, description, type, every_n_days, day_of_month, dates, parity, created_at, updated_at
+		SELECT id, title, description, type, every_n_days, day_of_month, dates, parity, deadline_days, created_at, updated_at
 		FROM task_schedules
 		ORDER BY id DESC
 	`
@@ -132,7 +133,6 @@ func (r *ScheduleRepository) List(ctx context.Context) ([]taskdomain.Schedule, e
 		}
 		result = append(result, *s)
 	}
-
 	return result, rows.Err()
 }
 
@@ -153,7 +153,7 @@ func scanSchedule(sc scheduleScanner) (*taskdomain.Schedule, error) {
 	if err := sc.Scan(
 		&s.ID, &s.Title, &s.Description, &schedType,
 		&everyNDays, &dayOfMonth, &datesRaw, &parity,
-		&s.CreatedAt, &s.UpdatedAt,
+		&s.DeadlineDays, &s.CreatedAt, &s.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}

@@ -22,21 +22,22 @@ func NewService(repo Repository) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Schedule, error) {
-	if err := validateInput(input.Title, input.Type, input.EveryNDays, input.DayOfMonth, input.Dates, input.Parity); err != nil {
+	if err := validateInput(input.Title, input.Type, input.EveryNDays, input.DayOfMonth, input.Dates, input.Parity, input.DeadlineDays); err != nil {
 		return nil, err
 	}
 
 	now := s.now()
 	model := &taskdomain.Schedule{
-		Title:       strings.TrimSpace(input.Title),
-		Description: strings.TrimSpace(input.Description),
-		Type:        input.Type,
-		EveryNDays:  input.EveryNDays,
-		DayOfMonth:  input.DayOfMonth,
-		Dates:       input.Dates,
-		Parity:      input.Parity,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		Title:        strings.TrimSpace(input.Title),
+		Description:  strings.TrimSpace(input.Description),
+		Type:         input.Type,
+		EveryNDays:   input.EveryNDays,
+		DayOfMonth:   input.DayOfMonth,
+		Dates:        input.Dates,
+		Parity:       input.Parity,
+		DeadlineDays: input.DeadlineDays,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	return s.repo.Create(ctx, model)
@@ -54,20 +55,21 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
 	}
 
-	if err := validateInput(input.Title, input.Type, input.EveryNDays, input.DayOfMonth, input.Dates, input.Parity); err != nil {
+	if err := validateInput(input.Title, input.Type, input.EveryNDays, input.DayOfMonth, input.Dates, input.Parity, input.DeadlineDays); err != nil {
 		return nil, err
 	}
 
 	model := &taskdomain.Schedule{
-		ID:          id,
-		Title:       strings.TrimSpace(input.Title),
-		Description: strings.TrimSpace(input.Description),
-		Type:        input.Type,
-		EveryNDays:  input.EveryNDays,
-		DayOfMonth:  input.DayOfMonth,
-		Dates:       input.Dates,
-		Parity:      input.Parity,
-		UpdatedAt:   s.now(),
+		ID:           id,
+		Title:        strings.TrimSpace(input.Title),
+		Description:  strings.TrimSpace(input.Description),
+		Type:         input.Type,
+		EveryNDays:   input.EveryNDays,
+		DayOfMonth:   input.DayOfMonth,
+		Dates:        input.Dates,
+		Parity:       input.Parity,
+		DeadlineDays: input.DeadlineDays,
+		UpdatedAt:    s.now(),
 	}
 
 	return s.repo.Update(ctx, model)
@@ -91,6 +93,7 @@ func validateInput(
 	dayOfMonth int,
 	dates []time.Time,
 	parity taskdomain.Parity,
+	deadlineDays int,
 ) error {
 	if strings.TrimSpace(title) == "" {
 		return fmt.Errorf("%w: title is required", ErrInvalidInput)
@@ -98,6 +101,9 @@ func validateInput(
 
 	if !schedType.Valid() {
 		return fmt.Errorf("%w: invalid schedule type %q", ErrInvalidInput, schedType)
+	}
+	if deadlineDays < 0 {
+		return fmt.Errorf("%w: deadline_days cannot be negative", ErrInvalidInput)
 	}
 
 	switch schedType {

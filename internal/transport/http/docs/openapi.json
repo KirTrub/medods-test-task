@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Task Service API",
-    "version": "2.0.0",
-    "description": "CRUD API for tasks and recurring schedules built with clean architecture."
+    "version": "2.1.0",
+    "description": "CRUD API for tasks and recurring schedules. Supports automatic task generation with configurable deadlines."
   },
   "servers": [
     { "url": "http://localhost:8080" }
@@ -31,11 +31,26 @@
       "post": {
         "tags": ["Tasks"],
         "summary": "Create a task manually",
+        "description": "Creates a one-off task. To create a recurring task use the Schedules API — the scheduler will generate task instances automatically.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateTaskRequest" }
+              "schema": { "$ref": "#/components/schemas/CreateTaskRequest" },
+              "examples": {
+                "minimal": {
+                  "summary": "Title only",
+                  "value": { "title": "Call patient Ivanov" }
+                },
+                "full": {
+                  "summary": "All fields",
+                  "value": {
+                    "title": "Call patient Ivanov",
+                    "description": "Discuss discharge plan",
+                    "status": "new"
+                  }
+                }
+              }
             }
           }
         },
@@ -72,6 +87,7 @@
       "put": {
         "tags": ["Tasks"],
         "summary": "Update a task",
+        "description": "Updates title, description and status. deadline_at is managed by the scheduler and cannot be changed via this endpoint.",
         "parameters": [ { "$ref": "#/components/parameters/ResourceId" } ],
         "requestBody": {
           "required": true,
@@ -122,7 +138,7 @@
       "post": {
         "tags": ["Schedules"],
         "summary": "Create a recurring schedule",
-        "description": "Creates a schedule template. The scheduler generates a new task from this template every day it matches the recurrence rule.",
+        "description": "Creates a schedule template. Every day at midnight UTC the scheduler checks all schedules and generates a new task instance for each one that matches today's date. If `deadline_days` > 0, the generated task will have `deadline_at` set to today + deadline_days.",
         "requestBody": {
           "required": true,
           "content": {
@@ -130,12 +146,13 @@
               "schema": { "$ref": "#/components/schemas/ScheduleRequest" },
               "examples": {
                 "daily": {
-                  "summary": "Every 2 days",
+                  "summary": "Every 2 days, 3-day deadline",
                   "value": {
                     "title": "Daily patient calls",
                     "description": "Call all patients on the list",
                     "type": "daily",
-                    "every_n_days": 2
+                    "every_n_days": 2,
+                    "deadline_days": 3
                   }
                 },
                 "monthly": {
@@ -200,6 +217,7 @@
       "put": {
         "tags": ["Schedules"],
         "summary": "Update a schedule",
+        "description": "Updates the schedule template. Changes take effect on the next scheduler run. Already-generated tasks are not affected.",
         "parameters": [ { "$ref": "#/components/parameters/ResourceId" } ],
         "requestBody": {
           "required": true,
@@ -225,7 +243,7 @@
       "delete": {
         "tags": ["Schedules"],
         "summary": "Delete a schedule",
-        "description": "Deletes the schedule template. Existing tasks generated from it are kept (schedule_id becomes null).",
+        "description": "Deletes the schedule template. Existing tasks generated from it are kept (their schedule_id becomes null).",
         "parameters": [ { "$ref": "#/components/parameters/ResourceId" } ],
         "responses": {
           "204": { "description": "Deleted" },
@@ -245,7 +263,7 @@
     },
     "responses": {
       "BadRequest": {
-        "description": "Bad request",
+        "description": "Bad request — validation error",
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/Error" }
@@ -266,11 +284,18 @@
         "type": "object",
         "required": ["title"],
         "properties": {
-          "title":       { "type": "string",  "example": "Prepare release" },
-          "description": { "type": "string",  "example": "Collect release notes" },
+          "title": {
+            "type": "string",
+            "example": "Call patient Ivanov"
+          },
+          "description": {
+            "type": "string",
+            "example": "Discuss discharge plan"
+          },
           "status": {
             "type": "string",
             "enum": ["new", "in_progress", "done"],
+            "default": "new",
             "example": "new"
           }
         }
@@ -279,25 +304,43 @@
         "type": "object",
         "required": ["title", "status"],
         "properties": {
-          "title":       { "type": "string",  "example": "Prepare release" },
-          "description": { "type": "string",  "example": "Collect release notes" },
+          "title": {
+            "type": "string",
+            "example": "Call patient Ivanov"
+          },
+          "description": {
+            "type": "string",
+            "example": "Discuss discharge plan"
+          },
           "status": {
             "type": "string",
             "enum": ["new", "in_progress", "done"],
-            "example": "in_progress"
+            "example": "in_progress",
+            "description": "Note: overdue is a system-managed status set automatically when deadline_at is exceeded."
           }
         }
       },
       "Task": {
         "type": "object",
         "properties": {
-          "id":          { "type": "integer", "format": "int64", "example": 1 },
-          "title":       { "type": "string",  "example": "Prepare release" },
-          "description": { "type": "string",  "example": "Collect release notes" },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Call patient Ivanov"
+          },
+          "description": {
+            "type": "string",
+            "example": "Discuss discharge plan"
+          },
           "status": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "new"
+            "enum": ["new", "in_progress", "done", "overdue"],
+            "example": "new",
+            "description": "overdue is set automatically by the scheduler when deadline_at < now and the task is not yet done."
           },
           "schedule_id": {
             "type": "integer",
@@ -306,16 +349,37 @@
             "description": "Set when the task was auto-generated by a schedule. Null for manually created tasks.",
             "example": 3
           },
-          "created_at": { "type": "string", "format": "date-time", "example": "2026-04-19T00:00:00Z" },
-          "updated_at": { "type": "string", "format": "date-time", "example": "2026-04-19T00:00:00Z" }
+          "deadline_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Deadline timestamp. Set automatically by the scheduler based on the schedule's deadline_days. Null if no deadline.",
+            "example": "2026-04-25T00:00:00Z"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-22T00:00:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-22T00:00:00Z"
+          }
         }
       },
       "ScheduleRequest": {
         "type": "object",
         "required": ["title", "type"],
         "properties": {
-          "title":       { "type": "string", "example": "Daily patient calls" },
-          "description": { "type": "string", "example": "Call every patient on the list" },
+          "title": {
+            "type": "string",
+            "example": "Daily patient calls"
+          },
+          "description": {
+            "type": "string",
+            "example": "Call every patient on the list"
+          },
           "type": {
             "type": "string",
             "enum": ["daily", "monthly", "specific_dates", "parity"],
@@ -326,48 +390,84 @@
             "type": "integer",
             "minimum": 1,
             "example": 1,
-            "description": "Required when type=daily. Task is created every N days starting from schedule creation date."
+            "description": "Required when type=daily. A task is created every N days starting from the schedule creation date."
           },
           "day_of_month": {
             "type": "integer",
             "minimum": 1,
             "maximum": 30,
             "example": 15,
-            "description": "Required when type=monthly. Task is created on this calendar day each month."
+            "description": "Required when type=monthly. A task is created on this calendar day each month."
           },
           "dates": {
             "type": "array",
             "items": { "type": "string", "format": "date", "example": "2026-06-30" },
-            "description": "Required when type=specific_dates. Task is created only on these exact dates (YYYY-MM-DD)."
+            "description": "Required when type=specific_dates. A task is created only on these exact dates (YYYY-MM-DD)."
           },
           "parity": {
             "type": "string",
             "enum": ["even", "odd"],
             "example": "even",
-            "description": "Required when type=parity. Task is created on even or odd days of the month."
+            "description": "Required when type=parity. A task is created on even or odd days of the month."
+          },
+          "deadline_days": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 3,
+            "description": "Optional. When > 0, generated tasks will have deadline_at = task creation date + deadline_days. 0 means no deadline."
           }
         }
       },
       "Schedule": {
         "type": "object",
         "properties": {
-          "id":          { "type": "integer", "format": "int64", "example": 1 },
-          "title":       { "type": "string",  "example": "Daily patient calls" },
-          "description": { "type": "string",  "example": "Call every patient on the list" },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Daily patient calls"
+          },
+          "description": {
+            "type": "string",
+            "example": "Call every patient on the list"
+          },
           "type": {
             "type": "string",
             "enum": ["daily", "monthly", "specific_dates", "parity"],
             "example": "daily"
           },
-          "every_n_days": { "type": "integer", "example": 2 },
-          "day_of_month": { "type": "integer", "example": 15 },
+          "every_n_days": {
+            "type": "integer",
+            "example": 2
+          },
+          "day_of_month": {
+            "type": "integer",
+            "example": 15
+          },
           "dates": {
             "type": "array",
             "items": { "type": "string", "format": "date" }
           },
-          "parity": { "type": "string", "enum": ["even", "odd"] },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "parity": {
+            "type": "string",
+            "enum": ["even", "odd"]
+          },
+          "deadline_days": {
+            "type": "integer",
+            "example": 3,
+            "description": "Number of days from task creation until deadline_at. 0 means no deadline."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "Error": {
